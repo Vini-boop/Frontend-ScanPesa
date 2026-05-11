@@ -125,6 +125,13 @@ body,
   overflow-y: auto;
 }
 
+/* On desktop, card pages get more breathing room */
+@media (min-width: 768px) {
+  .page {
+    padding: 40px 24px;
+  }
+}
+
 .card {
   width: 100%;
   max-width: 420px;
@@ -134,6 +141,21 @@ body,
   padding: 36px 32px;
   box-shadow: var(--shadow);
   animation: slideUp 0.4s ease;
+}
+
+/* Wider card on desktop */
+@media (min-width: 768px) {
+  .card {
+    max-width: 480px;
+    padding: 44px 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 24px 18px;
+    border-radius: 12px;
+  }
 }
 
 @keyframes slideUp {
@@ -558,9 +580,83 @@ body,
   color: white;
 }
 
+/* ── Responsive ──────────────────────────────────────── */
+
+/* Small phones */
+@media (max-width: 360px) {
+  .card {
+    padding: 20px 14px;
+  }
+
+  .btn {
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  .form-input {
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+
+  .merchant-avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 22px;
+  }
+
+  .amount-display .amount-value {
+    font-size: 26px;
+  }
+
+  .result-title {
+    font-size: 20px;
+  }
+}
+
+/* Standard mobile */
 @media (max-width: 480px) {
   .card {
-    padding: 28px 20px;
+    padding: 24px 18px;
+    border-radius: 12px;
+  }
+
+  .receipt-row {
+    font-size: 13px;
+  }
+
+  .wait-title {
+    font-size: 18px;
+  }
+
+  .result-title {
+    font-size: 22px;
+  }
+}
+
+/* Tablet and up — center card with more space */
+@media (min-width: 768px) {
+  .page {
+    padding: 48px 32px;
+  }
+
+  .card {
+    max-width: 480px;
+    padding: 44px 40px;
+  }
+
+  .merchant-name {
+    font-size: 20px;
+  }
+
+  .amount-display .amount-value {
+    font-size: 36px;
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1024px) {
+  .card {
+    max-width: 500px;
   }
 }
 
@@ -590,4 +686,54 @@ p,
 
 .logo-text {
   font-family: var(--font-heading);
+}
+
+/* ── Landing page responsive helpers ────────────────── */
+.landing-section {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+@media (min-width: 768px) {
+  .landing-section {
+    max-width: 720px;
+    padding: 0 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-section {
+    max-width: 860px;
+  }
+}
+
+/* QR page scroll fix on short screens */
+@media (max-height: 700px) {
+  .page {
+    justify-content: flex-start;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+}
+
+/* Prevent text overflow on all screens */
+* {
+  word-break: break-word;
+}
+
+/* Touch targets — minimum 44px on mobile */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 48px;
+  }
+
+  .form-input {
+    min-height: 48px;
+  }
+
+  .theme-toggle {
+    min-height: 40px;
+  }
 }

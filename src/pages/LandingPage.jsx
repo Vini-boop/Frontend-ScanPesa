@@ -24,27 +24,29 @@ export default function LandingPage() {
             {/* NAV */}
             <nav style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "16px 24px",
+                padding: "14px 20px",
                 borderBottom: "1px solid var(--nav-border)",
                 position: "sticky", top: 0, zIndex: 100,
                 background: "var(--nav-bg)",
+                flexWrap: "wrap", gap: 10,
             }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <img src={mpesaLogo} alt="M-Pesa" style={{ height: 30, objectFit: "contain" }} />
-                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 900, letterSpacing: "-0.3px", lineHeight: 1 }}>
+                    <img src={mpesaLogo} alt="M-Pesa" style={{ height: 28, objectFit: "contain" }} />
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 900, letterSpacing: "-0.3px", lineHeight: 1 }}>
                         <span style={{ color: "var(--text-primary)" }}>Scan</span>
                         <span style={{ color: "#e53e5a" }}>Pesa</span>
                         <sup style={{ fontSize: 9, color: "var(--text-muted)", verticalAlign: "super", marginLeft: 1 }}>TM</sup>
                     </div>
                 </div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <ThemeToggle />
                     <button
                         onClick={() => navigate("/generate")}
                         style={{
                             background: "var(--mpesa-green)", color: "#fff", border: "none",
-                            borderRadius: 8, padding: "10px 20px",
+                            borderRadius: 8, padding: "9px 18px",
                             fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-ui)",
+                            whiteSpace: "nowrap",
                         }}
                     >
                         Get Started
@@ -55,7 +57,7 @@ export default function LandingPage() {
             {/* HERO */}
             <section style={{
                 textAlign: "center",
-                padding: "64px 24px 56px",
+                padding: "clamp(40px, 8vw, 80px) 20px clamp(40px, 6vw, 64px)",
                 background: "var(--hero-glow)",
             }}>
                 <div style={{
@@ -183,7 +185,7 @@ export default function LandingPage() {
                         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800 }}>Any business that accepts M-Pesa</h2>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
                         {BUSINESS_TYPES.map((label) => (
                             <div key={label} style={{
                                 display: "flex", alignItems: "center", gap: 10,
