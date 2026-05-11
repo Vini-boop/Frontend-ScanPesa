@@ -8,37 +8,6 @@ import CardHeader from "../components/CardHeader";
 
 const BASE_URL = import.meta.env.VITE_WEB_URL || window.location.origin;
 
-function SecurityBadge({ qrMode, expiry, expiresAt }) {
-  const isStatic = qrMode === "static";
-  const expiryLabel = expiresAt
-    ? new Date(expiresAt).toLocaleDateString("en-KE", { dateStyle: "medium" })
-    : "Never";
-
-  return (
-    <div style={{ width: "100%", background: "rgba(0,166,81,0.06)", border: "1px solid rgba(0,166,81,0.2)", borderRadius: 12, padding: "14px 16px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--mpesa-green)" }} />
-        <span style={{ fontWeight: 800, fontSize: 13, color: "var(--mpesa-green)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          Verified Merchant QR
-        </span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-        {[
-          { label: "QR Type", value: isStatic ? "Static (Permanent)" : "Dynamic (Transaction)" },
-          { label: "Security", value: "HMAC-SHA256 Signed" },
-          { label: "Valid Until", value: expiryLabel },
-          { label: "Status", value: "ACTIVE" },
-        ].map(({ label, value }) => (
-          <div key={label} style={{ background: "var(--bg-card)", borderRadius: 8, padding: "8px 10px" }}>
-            <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 2 }}>{label}</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: label === "Status" ? "var(--mpesa-green)" : "var(--text-primary)" }}>{value}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function QRDisplayPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -97,7 +66,6 @@ export default function QRDisplayPage() {
     ? `${BASE_URL}/pay?token=${qrToken}`
     : `${BASE_URL}/pay?merchant=${encodeURIComponent(merchant)}&${type === "paybill" ? "paybill=" + paybill : "till=" + till}${amount ? "&amount=" + amount : ""}`;
 
-  const isLocalUrl = /^http:\/\/(localhost|127\.0\.0\.1|\d+\.\d+\.\d+\.\d+)/.test(qrUrl);
   const typeLabel = type === "till" ? `Till ${till}` : type === "paybill" ? `Paybill ${paybill}` : `Pochi ${till}`;
 
   function handleDownload() {
@@ -175,31 +143,9 @@ export default function QRDisplayPage() {
             </div>
           )}
 
-          {/* Security badge */}
-          {qrPayload && (
-            <SecurityBadge
-              qrMode={qrMode}
-              expiry={expiry}
-              expiresAt={qrPayload.expiresAt}
-            />
-          )}
+          {/* Security badge - hidden */}
 
-          {isLocalUrl && (
-            <div style={{ background: "rgba(229,62,90,0.08)", border: "1px solid rgba(229,62,90,0.3)", borderRadius: 10, padding: "14px 16px", fontSize: 12, color: "var(--danger)", textAlign: "center", lineHeight: 1.8, width: "100%" }}>
-              <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>QR Will Not Work Outside This WiFi</div>
-              <div>The QR encodes a local address: <strong style={{ wordBreak: "break-all" }}>{qrUrl.split("/pay")[0]}</strong></div>
-              <div style={{ marginTop: 8, color: "var(--text-secondary)" }}>
-                To make it scannable from any phone:
-              </div>
-              <div style={{ marginTop: 6, background: "var(--bg-input)", borderRadius: 8, padding: "8px 12px", fontFamily: "monospace", fontSize: 11, textAlign: "left" }}>
-                cd web<br />
-                node start-dev.cjs
-              </div>
-              <div style={{ marginTop: 8, color: "var(--text-secondary)" }}>
-                Then open the app using the tunnel URL it prints, and regenerate the QR.
-              </div>
-            </div>
-          )}
+          {/* Local URL warning - hidden */}
 
           <button className="btn btn-primary" onClick={handleDownload} disabled={qrLoading || !!qrError}>
             Download QR Code (PNG)
