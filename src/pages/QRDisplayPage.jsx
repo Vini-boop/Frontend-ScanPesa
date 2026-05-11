@@ -24,10 +24,10 @@ function SecurityBadge({ qrMode, expiry, expiresAt }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         {[
-          { label: "QR Type",    value: isStatic ? "Static (Permanent)" : "Dynamic (Transaction)" },
-          { label: "Security",   value: "HMAC-SHA256 Signed" },
+          { label: "QR Type", value: isStatic ? "Static (Permanent)" : "Dynamic (Transaction)" },
+          { label: "Security", value: "HMAC-SHA256 Signed" },
           { label: "Valid Until", value: expiryLabel },
-          { label: "Status",     value: "ACTIVE" },
+          { label: "Status", value: "ACTIVE" },
         ].map(({ label, value }) => (
           <div key={label} style={{ background: "var(--bg-card)", borderRadius: 8, padding: "8px 10px" }}>
             <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 2 }}>{label}</div>
@@ -44,42 +44,42 @@ export default function QRDisplayPage() {
   const [params] = useSearchParams();
   const qrRef = useRef(null);
 
-  const type     = params.get("type")     || "till";
+  const type = params.get("type") || "till";
   const merchant = params.get("merchant") || "";
-  const till     = params.get("till")     || "";
-  const paybill  = params.get("paybill")  || "";
-  const account  = params.get("account")  || "";
-  const amount   = params.get("amount")   || "";
-  const ref      = params.get("ref")      || "";
-  const qrMode   = params.get("qrMode")   || "static";
-  const expiry   = params.get("expiry")   || "never";
-  const orderId  = params.get("orderId")  || "";
+  const till = params.get("till") || "";
+  const paybill = params.get("paybill") || "";
+  const account = params.get("account") || "";
+  const amount = params.get("amount") || "";
+  const ref = params.get("ref") || "";
+  const qrMode = params.get("qrMode") || "static";
+  const expiry = params.get("expiry") || "never";
+  const orderId = params.get("orderId") || "";
 
   const accountId = type === "paybill" ? paybill : till;
 
-  const [qrToken,    setQrToken]    = useState(null);
-  const [qrPayload,  setQrPayload]  = useState(null);
-  const [qrLoading,  setQrLoading]  = useState(true);
-  const [qrError,    setQrError]    = useState("");
+  const [qrToken, setQrToken] = useState(null);
+  const [qrPayload, setQrPayload] = useState(null);
+  const [qrLoading, setQrLoading] = useState(true);
+  const [qrError, setQrError] = useState("");
 
-  const [testPhone,   setTestPhone]   = useState("");
-  const [testAmount,  setTestAmount]  = useState("");
+  const [testPhone, setTestPhone] = useState("");
+  const [testAmount, setTestAmount] = useState("");
   const [testLoading, setTestLoading] = useState(false);
-  const [testError,   setTestError]   = useState("");
+  const [testError, setTestError] = useState("");
 
   // Generate signed token from backend on mount
   useEffect(() => {
     (async () => {
       try {
         const result = await generateQRToken({
-          qrType:      qrMode,
+          qrType: qrMode,
           merchant,
           accountType: type,
           accountId,
-          account:     account || undefined,
-          amount:      amount  ? Number(amount) : undefined,
-          ref:         ref     || undefined,
-          orderId:     orderId || undefined,
+          account: account || undefined,
+          amount: amount ? Number(amount) : undefined,
+          ref: ref || undefined,
+          orderId: orderId || undefined,
           expiry,
         });
         setQrToken(result.token);
@@ -98,7 +98,7 @@ export default function QRDisplayPage() {
     : `${BASE_URL}/pay?merchant=${encodeURIComponent(merchant)}&${type === "paybill" ? "paybill=" + paybill : "till=" + till}${amount ? "&amount=" + amount : ""}`;
 
   const isLocalUrl = /^http:\/\/(localhost|127\.0\.0\.1|\d+\.\d+\.\d+\.\d+)/.test(qrUrl);
-  const typeLabel  = type === "till" ? `Till ${till}` : type === "paybill" ? `Paybill ${paybill}` : `Pochi ${till}`;
+  const typeLabel = type === "till" ? `Till ${till}` : type === "paybill" ? `Paybill ${paybill}` : `Pochi ${till}`;
 
   function handleDownload() {
     const svg = qrRef.current?.querySelector("svg");
@@ -132,13 +132,13 @@ export default function QRDisplayPage() {
     setTestLoading(true);
     try {
       const result = await initiatePayment({
-        phone:     testPhone.replace(/[\s-]/g, ""),
-        amount:    Number(amt),
+        phone: testPhone.replace(/[\s-]/g, ""),
+        amount: Number(amt),
         merchant,
-        reference: ref     || orderId || undefined,
-        till:      (type === "till" || type === "pochi") ? till    : undefined,
-        paybill:   type === "paybill" ? paybill : undefined,
-        account:   type === "paybill" ? account : undefined,
+        reference: ref || orderId || undefined,
+        till: (type === "till" || type === "pochi") ? till : undefined,
+        paybill: type === "paybill" ? paybill : undefined,
+        account: type === "paybill" ? account : undefined,
       });
       navigate(`/waiting?ref=${result.reference}&merchant=${encodeURIComponent(merchant)}&amount=${amt}`);
     } catch (err) {
@@ -185,9 +185,19 @@ export default function QRDisplayPage() {
           )}
 
           {isLocalUrl && (
-            <div style={{ background: "rgba(255,184,63,0.12)", border: "1px solid rgba(255,184,63,0.4)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "var(--warning)", textAlign: "center", lineHeight: 1.6, width: "100%" }}>
-              Warning: Local URL - Google Lens will not reach it outside your WiFi.
-              Run node start-dev.cjs to get a public tunnel URL.
+            <div style={{ background: "rgba(229,62,90,0.08)", border: "1px solid rgba(229,62,90,0.3)", borderRadius: 10, padding: "14px 16px", fontSize: 12, color: "var(--danger)", textAlign: "center", lineHeight: 1.8, width: "100%" }}>
+              <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 6 }}>QR Will Not Work Outside This WiFi</div>
+              <div>The QR encodes a local address: <strong style={{ wordBreak: "break-all" }}>{qrUrl.split("/pay")[0]}</strong></div>
+              <div style={{ marginTop: 8, color: "var(--text-secondary)" }}>
+                To make it scannable from any phone:
+              </div>
+              <div style={{ marginTop: 6, background: "var(--bg-input)", borderRadius: 8, padding: "8px 12px", fontFamily: "monospace", fontSize: 11, textAlign: "left" }}>
+                cd web<br />
+                node start-dev.cjs
+              </div>
+              <div style={{ marginTop: 8, color: "var(--text-secondary)" }}>
+                Then open the app using the tunnel URL it prints, and regenerate the QR.
+              </div>
             </div>
           )}
 
