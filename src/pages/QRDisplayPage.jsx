@@ -26,17 +26,28 @@ export default function QRDisplayPage() {
 
   const accountId = type === "paybill" ? paybill : till;
 
-  const [qrToken, setQrToken] = useState(null);
-  const [qrPayload, setQrPayload] = useState(null);
-  const [qrLoading, setQrLoading] = useState(true);
-  const [qrError, setQrError] = useState("");
+  // Build QR URL immediately from params — shows QR right away without backend
+  const buildFallbackUrl = () => {
+    const p = new URLSearchParams();
+    if (merchant) p.set("merchant", merchant);
+    if (type === "till" && till) p.set("till", till);
+    if (type === "paybill" && paybill) p.set("paybill", paybill);
+    if (type === "paybill" && account) p.set("account", account);
+    if (type === "pochi" && till) p.set("till", till);
+    if (amount) p.set("amount", amount);
+    if (ref) p.set("ref", ref);
+    if (orderId) p.set("orderId", orderId);
+    return `${BASE_URL}/pay?${p.toString()}`;
+  };
+
+  const [qrUrl, setQrUrl] = useState(buildFallbackUrl);
 
   const [testPhone, setTestPhone] = useState("");
   const [testAmount, setTestAmount] = useState("");
   const [testLoading, setTestLoading] = useState(false);
   const [testError, setTestError] = useState("");
 
-  // Generate signed token from backend on mount
+  // Try to upgrade to a signed token in the background (non-blocking)
   useEffect(() => {
     (async () => {
       try {
@@ -51,20 +62,14 @@ export default function QRDisplayPage() {
           orderId: orderId || undefined,
           expiry,
         });
-        setQrToken(result.token);
-        setQrPayload(result.payload);
-      } catch (err) {
-        setQrError("Could not generate secure QR. Is the backend running?");
-      } finally {
-        setQrLoading(false);
+        if (result.token) {
+          setQrUrl(`${BASE_URL}/pay?token=${result.token}`);
+        }
+      } catch (_) {
+        // Backend not running — fallback URL already set, QR still works
       }
     })();
   }, []);
-
-  // The QR encodes a pay URL with the signed token
-  const qrUrl = qrToken
-    ? `${BASE_URL}/pay?token=${qrToken}`
-    : `${BASE_URL}/pay?merchant=${encodeURIComponent(merchant)}&${type === "paybill" ? "paybill=" + paybill : "till=" + till}${amount ? "&amount=" + amount : ""}`;
 
   const typeLabel = type === "till" ? `Till ${till}` : type === "paybill" ? `Paybill ${paybill}` : `Pochi ${till}`;
 
@@ -131,23 +136,15 @@ export default function QRDisplayPage() {
           </div>
 
           {/* QR Code */}
-          {qrLoading ? (
-            <div style={{ padding: 40, textAlign: "center", color: "var(--text-secondary)", fontSize: 14 }}>
-              Generating secure QR...
-            </div>
-          ) : qrError ? (
-            <div className="error-msg" style={{ width: "100%" }}>{qrError}</div>
-          ) : (
-            <div ref={qrRef} className="qr-box">
-              <QRCode value={qrUrl} size={200} bgColor="#ffffff" fgColor="#000000" level="H" />
-            </div>
-          )}
+          <div ref={qrRef} className="qr-box">
+            <QRCode value={qrUrl} size={200} bgColor="#ffffff" fgColor="#000000" level="H" />
+          </div>
 
           {/* Security badge - hidden */}
 
           {/* Local URL warning - hidden */}
 
-          <button className="btn btn-primary" onClick={handleDownload} disabled={qrLoading || !!qrError}>
+          <button className="btn btn-primary" onClick={handleDownload}>
             Download QR Code (PNG)
           </button>
 
