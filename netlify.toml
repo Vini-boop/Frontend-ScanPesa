@@ -2,19 +2,20 @@
   command   = "npm run build"
   publish   = "dist"
 
-# SPA routing — all paths serve index.html
+[build.environment]
+  NODE_VERSION = "20"
+
+# ── API proxy — MUST come before the SPA catch-all ──────────
+# Netlify forwards /api/* to your Render backend.
+# Replace the URL below with your actual Render URL.
+[[redirects]]
+  from   = "/api/*"
+  to     = "https://scanpesa-backend.onrender.com/:splat"
+  status = 200
+  force  = true
+
+# ── SPA routing — all other paths serve index.html ──────────
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
   status = 200
-
-# Proxy /api/* to the backend on Render
-# Replace the URL below with your actual Render backend URL after deploying it
-[[redirects]]
-  from   = "/api/*"
-  to     = "https://your-backend.onrender.com/:splat"
-  status = 200
-  force  = true
-
-[build.environment]
-  NODE_VERSION = "20"
