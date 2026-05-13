@@ -5,28 +5,28 @@ import { initiatePayment, verifyQRToken } from "../services/api";
 import CardHeader from "../components/CardHeader";
 
 export default function PayPage() {
-  const [params]  = useSearchParams();
-  const navigate  = useNavigate();
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
 
-  const token    = params.get("token")    || "";
+  const token = params.get("token") || "";
   const merchant = params.get("merchant") || "Merchant";
-  const till     = params.get("till")     || "";
-  const paybill  = params.get("paybill")  || "";
-  const account  = params.get("account")  || "";
-  const qrAmount = params.get("amount")   || "";
-  const ref      = params.get("ref")      || "";
+  const till = params.get("till") || "";
+  const paybill = params.get("paybill") || "";
+  const account = params.get("account") || "";
+  const qrAmount = params.get("amount") || "";
+  const ref = params.get("ref") || "";
 
-  const [step,      setStep]      = useState(0);
-  const [amount,    setAmount]    = useState(qrAmount);
-  const [phone,     setPhone]     = useState("");
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState("");
+  const [step, setStep] = useState(0);
+  const [amount, setAmount] = useState(qrAmount);
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // QR verification state
-  const [verifying,   setVerifying]   = useState(false);
-  const [verified,    setVerified]    = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verified, setVerified] = useState(false);
   const [verifyError, setVerifyError] = useState("");
-  const [qrData,      setQrData]      = useState(null);
+  const [qrData, setQrData] = useState(null);
 
   // Verify token on mount if present
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function PayPage() {
   const isFixedAmount = Boolean(qrAmount || qrData?.amount);
   const displayMerchant = qrData?.merchant || merchant;
   const displayType = qrData
-    ? (qrData.accountType === "till" ? `Buy Goods - Till ${qrData.accountId}` : qrData.accountType === "paybill" ? `Paybill ${qrData.accountId}` : `Pochi ${qrData.accountId}`)
+    ? (qrData.accountType === "till" ? `Buy Goods - Till ${qrData.accountId}` : qrData.accountType === "paybill" ? `Paybill ${qrData.accountId}` : qrData.accountType === "sendmoney" ? `Send Money - ${qrData.accountId}` : `Pochi ${qrData.accountId}`)
     : till ? `Buy Goods - Till ${till}` : paybill ? `Paybill ${paybill}` : "M-Pesa Payment";
 
   const avatarLetter = displayMerchant.charAt(0).toUpperCase();
@@ -74,18 +74,20 @@ export default function PayPage() {
     if (!rawPhone || rawPhone.length < 9) { setError("Enter a valid M-Pesa phone number."); return; }
     setLoading(true);
     try {
-      const useTill    = qrData?.accountType === "till"    ? qrData.accountId : till    || undefined;
+      const useTill = (qrData?.accountType === "till" || qrData?.accountType === "pochi" || qrData?.accountType === "sendmoney")
+        ? qrData.accountId
+        : till || undefined;
       const usePaybill = qrData?.accountType === "paybill" ? qrData.accountId : paybill || undefined;
       const useAccount = qrData?.account || account || undefined;
 
       const result = await initiatePayment({
-        phone:     rawPhone,
-        amount:    Number(amount),
-        merchant:  displayMerchant,
+        phone: rawPhone,
+        amount: Number(amount),
+        merchant: displayMerchant,
         reference: ref || undefined,
-        till:      useTill,
-        paybill:   usePaybill,
-        account:   useAccount,
+        till: useTill,
+        paybill: usePaybill,
+        account: useAccount,
       });
       navigate(`/waiting?ref=${result.reference}&merchant=${encodeURIComponent(displayMerchant)}&amount=${amount}`);
     } catch (err) {

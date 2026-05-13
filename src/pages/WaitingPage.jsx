@@ -1,4 +1,4 @@
-﻿// WaitingPage.jsx - Polls backend for payment status
+﻿// WaitingPage.jsx - Polls backend for payment status + Firebase real-time fallback
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { getPaymentStatus } from "../services/api";
@@ -19,11 +19,13 @@ export default function WaitingPage() {
   const [dots, setDots] = useState(".");
   const resolvedRef = useRef(false);
 
+  // Animated dots
   useEffect(() => {
-    const id = setInterval(() => setDots((d) => d.length >= 3 ? "." : d + "."), 500);
+    const id = setInterval(() => setDots((d) => (d.length >= 3 ? "." : d + ".")), 500);
     return () => clearInterval(id);
   }, []);
 
+  // Countdown + timeout
   useEffect(() => {
     if (timeLeft <= 0 && !resolvedRef.current) {
       resolvedRef.current = true;
@@ -34,46 +36,61 @@ export default function WaitingPage() {
     return () => clearTimeout(id);
   }, [timeLeft]);
 
+  function handleResult(status, data) {
+    if (resolvedRef.current) return;
+    resolvedRef.current = true;
+    if (status === "paid") {
+      navigate(
+        `/success?ref=${reference}&receipt=${data?.receipt || ""}&amount=${data?.amount || amount}&merchant=${encodeURIComponent(merchant)}`
+      );
+    } else {
+      navigate(`/failed?ref=${reference}&reason=cancelled`);
+    }
+  }
+
+  // Primary: HTTP polling
   useEffect(() => {
     if (!reference) return;
     const poll = async () => {
       if (resolvedRef.current) return;
       try {
         const data = await getPaymentStatus(reference);
-        if (data.status === "paid") {
-          resolvedRef.current = true;
-          navigate(`/success?ref=${reference}&receipt=${data.receipt || ""}&amount=${data.amount || amount}&merchant=${encodeURIComponent(merchant)}`);
-        } else if (data.status === "failed") {
-          resolvedRef.current = true;
-          navigate(`/failed?ref=${reference}&reason=cancelled`);
+        if (data.status === "paid" || data.status === "failed") {
+          handleResult(data.status, data);
         }
-      } catch (_) { }
+      } catch (_) {
+        // network error — keep polling
+      }
     };
-    poll();
+    poll(); // immediate first check
     const id = setInterval(poll, POLL_INTERVAL);
     return () => clearInterval(id);
   }, [reference]);
 
+  // Secondary: Firebase real-time listener (silent — enhances speed if configured)
   useEffect(() => {
     if (!reference) return;
     let unsubscribe = null;
     (async () => {
       try {
         const { db } = await import("../services/firebase");
+        if (!db) return;
         const { doc, onSnapshot } = await import("firebase/firestore");
         const docRef = doc(db, "payments", reference);
-        unsubscribe = onSnapshot(docRef, (snap) => {
-          if (!snap.exists() || resolvedRef.current) return;
-          const d = snap.data();
-          if (d.status === "paid") {
-            resolvedRef.current = true;
-            navigate(`/success?ref=${reference}&receipt=${d.receipt || ""}&amount=${d.amount || amount}&merchant=${encodeURIComponent(merchant)}`);
-          } else if (d.status === "failed") {
-            resolvedRef.current = true;
-            navigate(`/failed?ref=${reference}&reason=cancelled`);
-          }
-        });
-      } catch (_) { }
+        unsubscribe = onSnapshot(
+          docRef,
+          (snap) => {
+            if (!snap.exists() || resolvedRef.current) return;
+            const d = snap.data();
+            if (d.status === "paid" || d.status === "failed") {
+              handleResult(d.status, d);
+            }
+          },
+          () => { } // ignore errors — polling handles it
+        );
+      } catch (_) {
+        // Firebase not configured — polling handles everything
+      }
     })();
     return () => unsubscribe?.();
   }, [reference]);

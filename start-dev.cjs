@@ -73,10 +73,15 @@ function spawnProc(cmd, args, cwd, label) {
     console.log("[3/4] Writing public URLs to .env...");
     writeEnv(webUrl, apiUrl);
 
-    // Update backend CALLBACK_URL
+    // Update backend CALLBACK_URL and CALLBACK_BASE_URL
     const backendEnvPath = path.join(BACKEND_DIR, ".env");
     let benv = fs.readFileSync(backendEnvPath, "utf8");
     benv = benv.replace(/^CALLBACK_URL=.*/m, `CALLBACK_URL=${apiUrl}/callback`);
+    if (/^CALLBACK_BASE_URL=.*/m.test(benv)) {
+        benv = benv.replace(/^CALLBACK_BASE_URL=.*/m, `CALLBACK_BASE_URL=${apiUrl}`);
+    } else {
+        benv += `\nCALLBACK_BASE_URL=${apiUrl}\n`;
+    }
     fs.writeFileSync(backendEnvPath, benv, "utf8");
 
     backendTunnel.on("close", () => console.log("\n[WARN] Backend tunnel closed. Restart to reconnect."));

@@ -95,6 +95,16 @@ export default function LandingPage() {
                         Generate My QR Code
                     </button>
                     <button
+                        onClick={() => navigate("/register")}
+                        style={{
+                            width: "100%", background: "var(--bg-input)", color: "var(--text-primary)",
+                            border: "1.5px solid var(--mpesa-green)", borderRadius: 14, padding: "16px 32px",
+                            fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-ui)",
+                        }}
+                    >
+                        Register as Verified Merchant
+                    </button>
+                    <button
                         onClick={() => navigate("/pay")}
                         style={{
                             width: "100%", background: "var(--bg-input)", color: "var(--text-primary)",

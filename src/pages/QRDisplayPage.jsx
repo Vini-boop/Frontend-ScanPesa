@@ -1,4 +1,4 @@
-﻿// QRDisplayPage.jsx - Step 3: Signed QR + Verified Merchant Badge + Test STK Push
+﻿// QRDisplayPage.jsx - Step 3: Signed QR + Test STK Push
 import { useRef, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { QRCode } from "react-qr-code";
@@ -6,7 +6,15 @@ import { initiatePayment, generateQRToken } from "../services/api";
 import { StepDots } from "./QRTypePage";
 import CardHeader from "../components/CardHeader";
 
-const BASE_URL = import.meta.env.VITE_WEB_URL || window.location.origin;
+// Public base URL for QR codes.
+// VITE_WEB_URL must be set to your ngrok/tunnel URL so phones can reach /pay.
+// Falls back to window.location.origin (works when phone is on same WiFi).
+function getBaseUrl() {
+  const env = import.meta.env.VITE_WEB_URL;
+  if (env && env.trim() && !env.includes("loca.lt")) return env.trim();
+  // loca.lt URLs are often stale — fall back to origin
+  return window.location.origin;
+}
 
 export default function QRDisplayPage() {
   const navigate = useNavigate();
@@ -26,28 +34,33 @@ export default function QRDisplayPage() {
 
   const accountId = type === "paybill" ? paybill : till;
 
-  // Build QR URL immediately from params — shows QR right away without backend
-  const buildFallbackUrl = () => {
+  // Build the fallback (unsigned) pay URL using current origin
+  function buildFallbackUrl() {
+    const base = getBaseUrl();
     const p = new URLSearchParams();
     if (merchant) p.set("merchant", merchant);
     if (type === "till" && till) p.set("till", till);
     if (type === "paybill" && paybill) p.set("paybill", paybill);
     if (type === "paybill" && account) p.set("account", account);
     if (type === "pochi" && till) p.set("till", till);
+    if (type === "sendmoney" && till) p.set("till", till);
     if (amount) p.set("amount", amount);
     if (ref) p.set("ref", ref);
     if (orderId) p.set("orderId", orderId);
-    return `${BASE_URL}/pay?${p.toString()}`;
-  };
+    return `${base}/pay?${p.toString()}`;
+  }
 
   const [qrUrl, setQrUrl] = useState(buildFallbackUrl);
+  const [qrSigned, setQrSigned] = useState(false);
+  const [qrSignError, setQrSignError] = useState(false);
+  const [baseUrl, setBaseUrl] = useState(getBaseUrl);
 
   const [testPhone, setTestPhone] = useState("");
   const [testAmount, setTestAmount] = useState("");
   const [testLoading, setTestLoading] = useState(false);
   const [testError, setTestError] = useState("");
 
-  // Try to upgrade to a signed token in the background (non-blocking)
+  // Try to get a cryptographically signed token from the backend
   useEffect(() => {
     (async () => {
       try {
@@ -61,18 +74,28 @@ export default function QRDisplayPage() {
           ref: ref || undefined,
           orderId: orderId || undefined,
           expiry,
+          // sandbox: skip merchant verification so testing works without onboarding
+          skipVerification: true,
         });
         if (result.token) {
-          setQrUrl(`${BASE_URL}/pay?token=${result.token}`);
+          const base = getBaseUrl();
+          setBaseUrl(base);
+          setQrUrl(`${base}/pay?token=${result.token}`);
+          setQrSigned(true);
         }
       } catch (_) {
-        // Backend not running — fallback URL already set, QR still works
+        setQrSignError(true);
       }
     })();
   }, []);
 
-  const typeLabel = type === "till" ? `Till ${till}` : type === "paybill" ? `Paybill ${paybill}` : `Pochi ${till}`;
+  const typeLabel =
+    type === "till" ? `Till ${till}` :
+      type === "paybill" ? `Paybill ${paybill}` :
+        type === "sendmoney" ? `Send Money → ${till}` :
+          `Pochi ${till}`;
 
+  // ── Download QR as PNG ──────────────────────────────
   function handleDownload() {
     const svg = qrRef.current?.querySelector("svg");
     if (!svg) return;
@@ -89,7 +112,7 @@ export default function QRDisplayPage() {
       ctx.drawImage(img, 0, 0, 512, 512);
       URL.revokeObjectURL(url);
       const link = document.createElement("a");
-      link.download = `${merchant.replace(/\s+/g, "_")}_QR.png`;
+      link.download = `${(merchant || "QR").replace(/\s+/g, "_")}_QR.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     };
@@ -97,6 +120,7 @@ export default function QRDisplayPage() {
     img.src = url;
   }
 
+  // ── Test STK Push ───────────────────────────────────
   async function handleTestPayment() {
     setTestError("");
     if (!testPhone.trim()) { setTestError("Enter a phone number."); return; }
@@ -109,7 +133,7 @@ export default function QRDisplayPage() {
         amount: Number(amt),
         merchant,
         reference: ref || orderId || undefined,
-        till: (type === "till" || type === "pochi") ? till : undefined,
+        till: (type === "till" || type === "pochi" || type === "sendmoney") ? till : undefined,
         paybill: type === "paybill" ? paybill : undefined,
         account: type === "paybill" ? account : undefined,
       });
@@ -121,6 +145,9 @@ export default function QRDisplayPage() {
     }
   }
 
+  // Warn if QR URL is localhost — phone won't be able to reach it
+  const isLocalUrl = qrUrl.includes("localhost") || qrUrl.includes("127.0.0.1");
+
   return (
     <div className="page" style={{ justifyContent: "flex-start", paddingTop: 32 }}>
       <div className="card" style={{ display: "flex", flexDirection: "column" }}>
@@ -129,10 +156,12 @@ export default function QRDisplayPage() {
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
 
-          {/* Merchant verified header */}
+          {/* Merchant header */}
           <div style={{ width: "100%", textAlign: "center" }}>
             <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>{merchant}</div>
-            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{typeLabel}{amount ? ` - KES ${Number(amount).toLocaleString()}` : " - Open Amount"}</div>
+            <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+              {typeLabel}{amount ? ` · KES ${Number(amount).toLocaleString()}` : " · Open Amount"}
+            </div>
           </div>
 
           {/* QR Code */}
@@ -140,9 +169,35 @@ export default function QRDisplayPage() {
             <QRCode value={qrUrl} size={200} bgColor="#ffffff" fgColor="#000000" level="H" />
           </div>
 
-          {/* Security badge - hidden */}
+          {/* Signed status */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6,
+            fontSize: 11, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase",
+            color: qrSigned ? "var(--mpesa-green)" : "var(--text-muted)",
+          }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: qrSigned ? "var(--mpesa-green)" : "#aaa" }} />
+            {qrSigned ? "Cryptographically Signed" : qrSignError ? "Unsigned (backend offline)" : "Signing..."}
+          </div>
 
-          {/* Local URL warning - hidden */}
+          {/* Local URL warning — phone can't scan this */}
+          {isLocalUrl && (
+            <div style={{
+              background: "rgba(232,150,10,0.1)", border: "1px solid rgba(232,150,10,0.35)",
+              borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#b37800",
+              lineHeight: 1.6, width: "100%", textAlign: "center",
+            }}>
+              ⚠️ QR points to localhost — phones can't scan this.<br />
+              Set <code>VITE_WEB_URL</code> to your ngrok URL in <code>web/.env</code> and restart Vite.
+            </div>
+          )}
+
+          {/* QR URL preview (truncated) */}
+          <div style={{
+            fontSize: 10, color: "var(--text-muted)", wordBreak: "break-all",
+            textAlign: "center", maxWidth: "100%", padding: "0 4px",
+          }}>
+            {qrUrl.length > 80 ? qrUrl.substring(0, 80) + "…" : qrUrl}
+          </div>
 
           <button className="btn btn-primary" onClick={handleDownload}>
             Download QR Code (PNG)
@@ -152,19 +207,30 @@ export default function QRDisplayPage() {
 
           {/* Test STK Push */}
           <div style={{ width: "100%" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 14, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            <div style={{
+              fontSize: 13, fontWeight: 700, color: "var(--text-secondary)",
+              marginBottom: 14, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.5px",
+            }}>
               Test Payment via STK Push
             </div>
             <div className="form-group">
               <label className="form-label">Phone Number</label>
-              <input className="form-input" type="tel" inputMode="tel" placeholder="07XX XXX XXX"
-                value={testPhone} onChange={(e) => { setTestPhone(e.target.value); setTestError(""); }} maxLength={13} />
+              <input
+                className="form-input" type="tel" inputMode="tel" placeholder="07XX XXX XXX"
+                value={testPhone}
+                onChange={(e) => { setTestPhone(e.target.value); setTestError(""); }}
+                maxLength={13}
+              />
             </div>
             {!amount && (
               <div className="form-group">
                 <label className="form-label">Amount (KES)</label>
-                <input className="form-input" type="number" inputMode="numeric" placeholder="e.g. 100"
-                  value={testAmount} onChange={(e) => { setTestAmount(e.target.value); setTestError(""); }} min="1" />
+                <input
+                  className="form-input" type="number" inputMode="numeric" placeholder="e.g. 100"
+                  value={testAmount}
+                  onChange={(e) => { setTestAmount(e.target.value); setTestError(""); }}
+                  min="1"
+                />
               </div>
             )}
             {testError && <div className="error-msg">{testError}</div>}
@@ -173,7 +239,9 @@ export default function QRDisplayPage() {
             </button>
           </div>
 
-          <button className="btn btn-secondary" onClick={() => navigate(-1)}>Back to Edit Details</button>
+          <button className="btn btn-secondary" onClick={() => navigate(-1)}>
+            Back to Edit Details
+          </button>
         </div>
 
         <div className="powered-by" style={{ marginTop: 16 }}>Powered by Safaricom Daraja API</div>

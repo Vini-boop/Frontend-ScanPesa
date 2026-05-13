@@ -1,16 +1,29 @@
-// firebase.js — Firebase client SDK for web app
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+// firebase.js — Firebase client SDK (optional — polling works without it)
+// If Firebase is not configured, db will be null and WaitingPage falls back to polling.
 
-// Replace with your actual Firebase project config
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-};
+let db = null;
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+try {
+  const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+
+  if (apiKey && projectId && !apiKey.startsWith("YOUR_")) {
+    const { initializeApp } = await import("firebase/app");
+    const { getFirestore } = await import("firebase/firestore");
+
+    const app = initializeApp({
+      apiKey,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    });
+
+    db = getFirestore(app);
+  }
+} catch (_) {
+  // Firebase not available — polling handles status updates
+}
+
+export { db };

@@ -1,9 +1,10 @@
 ﻿// SuccessPage.jsx - Payment confirmed
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import CardHeader from "../components/CardHeader";
 
 export default function SuccessPage() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
 
   const receipt = params.get("receipt") || "N/A";
   const amount = params.get("amount") || "";
@@ -19,7 +20,7 @@ export default function SuccessPage() {
       <div className="card">
         <CardHeader />
 
-        <div className="result-icon success">OK</div>
+        <div className="result-icon success">✓</div>
 
         <div className="result-title success">Payment Successful!</div>
         <div className="result-subtitle">
@@ -55,7 +56,7 @@ export default function SuccessPage() {
           </div>
         </div>
 
-        <button className="btn btn-primary" onClick={() => window.close()} id="done-btn">
+        <button className="btn btn-primary" onClick={() => navigate("/")} id="done-btn">
           Done
         </button>
 

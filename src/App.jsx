@@ -8,12 +8,14 @@ import FailedPage from "./pages/FailedPage";
 import QRTypePage from "./pages/QRTypePage";
 import QRDetailsPage from "./pages/QRDetailsPage";
 import QRDisplayPage from "./pages/QRDisplayPage";
+import MerchantRegisterPage from "./pages/MerchantRegisterPage";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/register" element={<MerchantRegisterPage />} />
         <Route path="/generate" element={<QRTypePage />} />
         <Route path="/generate/details" element={<QRDetailsPage />} />
         <Route path="/generate/qr" element={<QRDisplayPage />} />
