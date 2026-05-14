@@ -1,9 +1,22 @@
 // api.js - Backend API calls
-// Uses Vite proxy (/api → localhost:5000) by default.
-// Set VITE_API_URL in web/.env only when you need to point at a public tunnel
-// (e.g. ngrok) for callback testing from a physical device on a different network.
+//
+// Routing logic:
+//   - On Netlify (production): always use /api — netlify.toml proxies it to Render
+//   - Local dev with tunnel:   use VITE_API_URL directly (set in web/.env)
+//   - Local dev no tunnel:     use /api — Vite proxy forwards to localhost:5000
+//
+// VITE_API_URL is only used when running locally with a tunnel for callback testing.
+// In production on Netlify, the proxy in netlify.toml handles /api/* → Render.
+
 const _envApi = import.meta.env.VITE_API_URL;
-const API_BASE = (_envApi && _envApi.trim() && !_envApi.includes("loca.lt"))
+const _isNetlify = typeof window !== "undefined" && window.location.hostname.includes(".netlify.app");
+const _isLocalhost = typeof window !== "undefined" && (
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+);
+
+// Use direct URL only when running locally with a tunnel URL set
+const API_BASE = (!_isNetlify && _isLocalhost && _envApi && _envApi.trim() && !_envApi.includes("loca.lt"))
   ? _envApi.trim()
   : "/api";
 

@@ -7,12 +7,14 @@ import { StepDots } from "./QRTypePage";
 import CardHeader from "../components/CardHeader";
 
 // Public base URL for QR codes.
-// VITE_WEB_URL must be set to your ngrok/tunnel URL so phones can reach /pay.
-// Falls back to window.location.origin (works when phone is on same WiFi).
+// On Netlify: use VITE_WEB_URL (set in Netlify env vars).
+// Local dev with tunnel: use VITE_WEB_URL if set and not a stale loca.lt URL.
+// Fallback: window.location.origin (works on same WiFi or localhost).
 function getBaseUrl() {
   const env = import.meta.env.VITE_WEB_URL;
-  if (env && env.trim() && !env.includes("loca.lt")) return env.trim();
-  // loca.lt URLs are often stale — fall back to origin
+  if (env && env.trim() && !env.includes("loca.lt") && !env.includes("localhost")) {
+    return env.trim().replace(/\/$/, "");
+  }
   return window.location.origin;
 }
 
