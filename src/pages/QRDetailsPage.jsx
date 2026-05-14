@@ -26,9 +26,7 @@ export default function QRDetailsPage() {
 
   const [form, setForm] = useState({
     merchant: "", till: "", paybill: "", account: "", amount: "", ref: "",
-    qrMode: "static",
-    expiry: "never",
-    orderId: "",
+    qrMode: "static", expiry: "never", orderId: "",
   });
   const [error, setError] = useState("");
 
@@ -36,19 +34,18 @@ export default function QRDetailsPage() {
     const { name, value } = e.target;
     setForm((f) => {
       const updated = { ...f, [name]: value };
-      if (name === "qrMode") {
-        updated.expiry = value === "static" ? "never" : "30min";
-      }
+      if (name === "qrMode") updated.expiry = value === "static" ? "never" : "30min";
       return updated;
     });
     setError("");
   }
 
   function handleGenerate() {
-    if (!form.merchant.trim()) { setError("Business name is required."); return; }
-    if (type === "till" && !form.till.trim()) { setError("Till number is required."); return; }
-    if (type === "paybill" && !form.paybill.trim()) { setError("Paybill number is required."); return; }
-    if (type === "pochi" && !form.till.trim()) { setError("M-Pesa phone number is required."); return; }
+    if (!form.merchant.trim())                        { setError("Business name is required.");       return; }
+    if (type === "till"      && !form.till.trim())    { setError("Till number is required.");         return; }
+    if (type === "paybill"   && !form.paybill.trim()) { setError("Paybill number is required.");      return; }
+    if (type === "pochi"     && !form.till.trim())    { setError("M-Pesa phone number is required."); return; }
+    if (type === "sendmoney" && !form.till.trim())    { setError("Recipient phone number is required."); return; }
     if (form.qrMode === "dynamic" && (!form.amount || Number(form.amount) < 1)) {
       setError("Dynamic QR requires a fixed amount."); return;
     }
@@ -56,7 +53,7 @@ export default function QRDetailsPage() {
     navigate(`/generate/qr?${p.toString()}`);
   }
 
-  const typeLabel = type === "till" ? "Till Number" : type === "paybill" ? "Paybill" : "Pochi La Biashara";
+  const typeLabel = type === "till" ? "Till Number" : type === "paybill" ? "Paybill" : type === "pochi" ? "Pochi La Biashara" : "Send Money";
   const expiryOptions = form.qrMode === "static" ? STATIC_EXPIRY : DYNAMIC_EXPIRY;
 
   return (
@@ -82,8 +79,7 @@ export default function QRDetailsPage() {
               { value: "static",  title: "Static QR",  desc: "Permanent for your shop or counter" },
               { value: "dynamic", title: "Dynamic QR", desc: "Single transaction, expires automatically" },
             ].map(({ value, title, desc }) => (
-              <button key={value} type="button"
-                onClick={() => handleChange({ target: { name: "qrMode", value } })}
+              <button key={value} type="button" onClick={() => handleChange({ target: { name: "qrMode", value } })}
                 style={{ padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left", border: `2px solid ${form.qrMode === value ? "var(--mpesa-green)" : "var(--border)"}`, background: form.qrMode === value ? "rgba(0,166,81,0.07)" : "var(--bg-input)", color: "var(--text-primary)", transition: "all 0.2s" }}>
                 <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{title}</div>
                 <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.4 }}>{desc}</div>
@@ -113,9 +109,14 @@ export default function QRDetailsPage() {
               <input className="form-input" name="account" placeholder="e.g. ORDER_001" value={form.account} onChange={handleChange} />
             </div>
           </>
-        ) : (
+        ) : type === "pochi" ? (
           <div className="form-group">
             <label className="form-label">M-Pesa Phone Number *</label>
+            <input className="form-input" name="till" placeholder="e.g. 0712 345 678" value={form.till} onChange={handleChange} inputMode="tel" type="tel" />
+          </div>
+        ) : (
+          <div className="form-group">
+            <label className="form-label">Recipient Phone Number *</label>
             <input className="form-input" name="till" placeholder="e.g. 0712 345 678" value={form.till} onChange={handleChange} inputMode="tel" type="tel" />
           </div>
         )}
@@ -150,9 +151,7 @@ export default function QRDetailsPage() {
           </select>
         </div>
 
-        <button className="btn btn-primary" onClick={handleGenerate} style={{ marginBottom: 12 }}>
-          Generate Secure QR Code
-        </button>
+        <button className="btn btn-primary" onClick={handleGenerate} style={{ marginBottom: 12 }}>Generate Secure QR Code</button>
         <button className="btn btn-secondary" onClick={() => navigate("/generate")}>Back</button>
 
         <div className="powered-by" style={{ marginTop: 20 }}>Powered by Safaricom Daraja API</div>

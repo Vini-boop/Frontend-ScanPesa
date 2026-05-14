@@ -1,20 +1,23 @@
 ﻿// QRTypePage.jsx  Step 1: Choose payment type
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import CardHeader  from "../components/CardHeader";
-import tillLogo    from "../assets/till-logo.jpg";
+import CardHeader from "../components/CardHeader";
+import tillLogo from "../assets/till-logo.jpg";
 import paybillLogo from "../assets/paybill-logo.webp";
-import pochiLogo   from "../assets/pochi-logo.jpg";
+import pochiLogo from "../assets/pochi-logo.jpg";
+import mpesaLogo from "../assets/mpesa-logo.png";
 
 const TYPES = [
-  { key: "till",    img: tillLogo,    alt: "Till Number",       label: "Till Number",       desc: "Buy Goods & Services  for shops, restaurants, and retail",          badge: "Most common" },
-  { key: "paybill", img: paybillLogo, alt: "Paybill",           label: "Paybill",           desc: "Pay Bill / Lipa Na M-Pesa  for utilities, schools, clinics",        badge: null },
-  { key: "pochi",   img: pochiLogo,   alt: "Pochi La Biashara", label: "Pochi La Biashara", desc: "Accept payments directly to your M-Pesa  ideal for small businesses", badge: null },
+  { key: "till",      img: tillLogo,    alt: "Till Number",       label: "Till Number",       desc: "Buy Goods and Services for shops, restaurants, and retail",           badge: "Most common", restricted: false },
+  { key: "paybill",   img: paybillLogo, alt: "Paybill",           label: "Paybill",           desc: "Pay Bill / Lipa Na M-Pesa for utilities, schools, clinics",           badge: null,          restricted: false },
+  { key: "pochi",     img: pochiLogo,   alt: "Pochi La Biashara", label: "Pochi La Biashara", desc: "Accept payments to your M-Pesa  requires Safaricom business agreement", badge: "Requires approval", restricted: true },
+  { key: "sendmoney", img: mpesaLogo,   alt: "Send Money",        label: "Send Money",        desc: "Send money directly to a phone number via M-Pesa",                    badge: null,          restricted: false },
 ];
 
 export default function QRTypePage() {
   const navigate = useNavigate();
   const [type, setType] = useState("till");
+  const selected = TYPES.find((t) => t.key === type);
 
   return (
     <div className="page" style={{ justifyContent: "flex-start", paddingTop: 32 }}>
@@ -31,17 +34,17 @@ export default function QRTypePage() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-          {TYPES.map(({ key, img, alt, label, desc, badge }) => {
+          {TYPES.map(({ key, img, alt, label, desc, badge, restricted }) => {
             const active = type === key;
             return (
-              <button key={key} onClick={() => setType(key)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14, cursor: "pointer", border: `2px solid ${active ? "var(--mpesa-green)" : "var(--border)"}`, background: active ? "rgba(0,166,81,0.07)" : "var(--bg-input)", color: "var(--text-primary)", textAlign: "left", width: "100%", transition: "all 0.2s", boxShadow: active ? "0 0 0 4px rgba(0,166,81,0.08)" : "none" }}>
+              <button key={key} onClick={() => setType(key)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14, cursor: "pointer", border: `2px solid ${active ? "var(--mpesa-green)" : "var(--border)"}`, background: active ? "rgba(0,166,81,0.07)" : "var(--bg-input)", color: "var(--text-primary)", textAlign: "left", width: "100%", transition: "all 0.2s", boxShadow: active ? "0 0 0 4px rgba(0,166,81,0.08)" : "none", opacity: restricted ? 0.8 : 1 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0, overflow: "hidden", border: `1px solid ${active ? "rgba(0,166,81,0.3)" : "var(--border)"}` }}>
                   <img src={img} alt={alt} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span>
-                    {badge && <span style={{ fontSize: 10, fontWeight: 700, color: "var(--mpesa-green)", background: "rgba(0,166,81,0.1)", borderRadius: 100, padding: "2px 8px" }}>{badge}</span>}
+                    {badge && <span style={{ fontSize: 10, fontWeight: 700, color: restricted ? "#e59a00" : "var(--mpesa-green)", background: restricted ? "rgba(229,154,0,0.1)" : "rgba(0,166,81,0.1)", borderRadius: 100, padding: "2px 8px" }}>{badge}</span>}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{desc}</div>
                 </div>
@@ -52,6 +55,12 @@ export default function QRTypePage() {
             );
           })}
         </div>
+
+        {selected?.restricted && (
+          <div style={{ background: "rgba(229,154,0,0.08)", border: "1px solid rgba(229,154,0,0.3)", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 12, color: "#b37800", lineHeight: 1.6 }}>
+            <strong>Note:</strong> Pochi La Biashara requires a special Safaricom business agreement and is not available via standard Daraja APIs. You can register, but QR generation requires Safaricom approval.
+          </div>
+        )}
 
         <button className="btn btn-primary" onClick={() => navigate(`/generate/details?type=${type}`)}>Continue </button>
         <div className="powered-by" style={{ marginTop: 20 }}>Powered by Safaricom Daraja API</div>
@@ -69,5 +78,3 @@ export function StepDots({ current }) {
     </div>
   );
 }
-
-
